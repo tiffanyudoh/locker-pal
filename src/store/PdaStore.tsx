@@ -10,6 +10,72 @@ import {
 import { DEFAULT_DATA, STORAGE_KEY, type DiaryEntry, type Friend, type HomeworkItem, type PdaData } from '../types';
 import { isOverdue, uid } from '../lib/util';
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null;
+}
+
+function asDiary(value: unknown): DiaryEntry | null {
+  if (!isRecord(value)) return null;
+  if (
+    typeof value.id !== 'string' ||
+    typeof value.title !== 'string' ||
+    typeof value.body !== 'string' ||
+    typeof value.date !== 'string'
+  ) {
+    return null;
+  }
+  return { id: value.id, title: value.title, body: value.body, date: value.date };
+}
+
+function asFriend(value: unknown): Friend | null {
+  if (!isRecord(value)) return null;
+  if (
+    typeof value.id !== 'string' ||
+    typeof value.name !== 'string' ||
+    typeof value.nickname !== 'string' ||
+    typeof value.birthday !== 'string' ||
+    typeof value.phone !== 'string'
+  ) {
+    return null;
+  }
+  return {
+    id: value.id,
+    name: value.name,
+    nickname: value.nickname,
+    birthday: value.birthday,
+    phone: value.phone,
+  };
+}
+
+function asHomework(value: unknown): HomeworkItem | null {
+  if (!isRecord(value)) return null;
+  if (
+    typeof value.id !== 'string' ||
+    typeof value.subject !== 'string' ||
+    typeof value.assignment !== 'string' ||
+    typeof value.dueDate !== 'string'
+  ) {
+    return null;
+  }
+  return {
+    id: value.id,
+    subject: value.subject,
+    assignment: value.assignment,
+    dueDate: value.dueDate,
+    done: value.done === true,
+  };
+}
+
+function asPin(value: unknown): string {
+  return typeof value === 'string' && /^\d{4}$/.test(value) ? value : DEFAULT_DATA.pin;
+}
+
+function asStreak(value: unknown): number {
+  return typeof value === 'number' && Number.isInteger(value) && value >= 0 && value <= 9999
+    ? value
+    : 0;
+}
+
 type PdaStoreValue = PdaData & {
   setPin: (pin: string) => void;
   addDiary: (entry: Omit<DiaryEntry, 'id'>) => void;
@@ -28,17 +94,25 @@ type PdaStoreValue = PdaData & {
 
 const PdaStoreContext = createContext<PdaStoreValue | null>(null);
 
+function keep<T>(items: unknown, parse: (value: unknown) => T | null): T[] {
+  if (!Array.isArray(items)) return [];
+  return items.flatMap((item) => {
+    const parsed = parse(item);
+    return parsed ? [parsed] : [];
+  });
+}
+
 function load(): PdaData {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return DEFAULT_DATA;
     const parsed = JSON.parse(raw) as Partial<PdaData>;
     return {
-      pin: typeof parsed.pin === 'string' && parsed.pin.length === 4 ? parsed.pin : DEFAULT_DATA.pin,
-      diary: Array.isArray(parsed.diary) ? parsed.diary : [],
-      friends: Array.isArray(parsed.friends) ? parsed.friends : [],
-      homework: Array.isArray(parsed.homework) ? parsed.homework : [],
-      comboStreak: typeof parsed.comboStreak === 'number' ? parsed.comboStreak : 0,
+      pin: asPin(parsed.pin),
+      diary: keep(parsed.diary, asDiary),
+      friends: keep(parsed.friends, asFriend),
+      homework: keep(parsed.homework, asHomework),
+      comboStreak: asStreak(parsed.comboStreak),
     };
   } catch {
     return DEFAULT_DATA;
@@ -49,7 +123,11 @@ export function PdaStoreProvider({ children }: { children: ReactNode }) {
   const [data, setData] = useState<PdaData>(load);
 
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    } catch {
+      // Quota or blocked storage. Keep the in-memory copy.
+    }
   }, [data]);
 
   const setPin = useCallback((pin: string) => {

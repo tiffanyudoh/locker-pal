@@ -137,16 +137,19 @@ export function PdaProvider({ children }: { children: ReactNode }) {
     const onKey = (e: KeyboardEvent) => {
       if (!lidOpen) return;
       const target = e.target as HTMLElement | null;
-      const typing =
+      if (
         target &&
         (target.tagName === 'INPUT' ||
           target.tagName === 'TEXTAREA' ||
-          target.tagName === 'SELECT');
-      if (typing) {
+          target.tagName === 'SELECT')
+      ) {
         if (e.key === 'Escape') {
           e.preventDefault();
-          sendKey('BACK');
+          target.blur();
         }
+        return;
+      }
+      if (target?.tagName === 'BUTTON' && (e.key === 'Enter' || e.key === ' ')) {
         return;
       }
       if (e.key >= '0' && e.key <= '9') {

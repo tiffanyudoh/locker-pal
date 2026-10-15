@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { LcdChrome } from '../components/LcdWidgets';
 import { beepError, beepOk } from '../audio/beeps';
+import { useDelayedCommit } from '../lib/useDelayedCommit';
 import { usePda, usePdaKeys } from '../nav/PdaContext';
 import { usePdaStore } from '../store/PdaStore';
 import type { PdaKey } from '../types';
@@ -21,65 +22,91 @@ export function Settings() {
   const [digits, setDigits] = useState('');
   const [pending, setPending] = useState('');
   const [msg, setMsg] = useState('ENTER CURRENT PIN');
+  const armed = useRef(true);
+  const stepRef = useRef(step);
+  const pendingRef = useRef(pending);
+  const pinRef = useRef(pin);
 
-  const advance = (value: string) => {
-    if (step === 'old') {
-      if (value !== pin) {
-        beepError();
-        triggerShake();
+  useEffect(() => {
+    stepRef.current = step;
+    pendingRef.current = pending;
+    pinRef.current = pin;
+  });
+
+  useEffect(() => {
+    if (digits.length < 4) armed.current = true;
+  }, [digits]);
+
+  const advance = useCallback(
+    (value: string) => {
+      if (!armed.current || value.length !== 4 || stepRef.current === 'done') return;
+      armed.current = false;
+      const stepNow = stepRef.current;
+
+      if (stepNow === 'old') {
+        if (value !== pinRef.current) {
+          beepError();
+          triggerShake();
+          setDigits('');
+          setMsg('NOPE');
+          return;
+        }
+        beepOk();
         setDigits('');
-        setMsg('NOPE');
+        stepRef.current = 'next';
+        setStep('next');
+        setMsg('ENTER NEW PIN');
         return;
       }
-      beepOk();
-      setDigits('');
-      setStep('next');
-      setMsg('ENTER NEW PIN');
-      return;
-    }
-    if (step === 'next') {
-      setPending(value);
-      setDigits('');
-      setStep('confirm');
-      setMsg('AGAIN PLEASE');
-      return;
-    }
-    if (step === 'confirm') {
-      if (value !== pending) {
+
+      if (stepNow === 'next') {
+        pendingRef.current = value;
+        stepRef.current = 'confirm';
+        setPending(value);
+        setDigits('');
+        setStep('confirm');
+        setMsg('AGAIN PLEASE');
+        return;
+      }
+
+      if (value !== pendingRef.current) {
         beepError();
         triggerShake();
         setDigits('');
-        setStep('next');
+        pendingRef.current = '';
+        stepRef.current = 'next';
         setPending('');
+        setStep('next');
         setMsg('NO MATCH');
         return;
       }
+
       setPin(value);
       beepOk();
       setDigits('');
+      stepRef.current = 'done';
       setStep('done');
       setMsg('PIN SAVED');
-    }
-  };
+    },
+    [setPin, triggerShake],
+  );
+
+  const cancel = useDelayedCommit(digits, step !== 'done' && digits.length === 4, advance);
 
   usePdaKeys((key: PdaKey) => {
-    if (step === 'done') return;
+    if (stepRef.current === 'done') return;
     if (key === 'C') {
+      cancel();
       setDigits('');
       return;
     }
     if (key === 'OK') {
+      cancel();
       if (digits.length === 4) advance(digits);
       return;
     }
     if (key < '0' || key > '9') return;
-    setDigits((current) => {
-      const next = (current + key).slice(0, 4);
-      if (next.length === 4) {
-        window.setTimeout(() => advance(next), 80);
-      }
-      return next;
-    });
+    setDigits((current) => (current + key).slice(0, 4));
   });
 
   return (

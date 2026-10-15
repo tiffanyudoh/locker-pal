@@ -700,6 +700,11 @@
   background: linear-gradient(#5a326e, var(--purple));
 }
 
+.key-latched {
+  background: linear-gradient(#ffe16a, var(--comp-yellow));
+  color: #1c1c2a;
+}
+
 .key-space {
   flex: 3.2;
   font-size: 9px;

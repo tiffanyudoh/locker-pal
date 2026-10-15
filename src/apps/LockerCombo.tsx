@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { LcdBtn, LcdChrome } from '../components/LcdWidgets';
 import { beepError, beepWin } from '../audio/beeps';
+import { useDelayedCommit } from '../lib/useDelayedCommit';
 import { randomCombo, scoreGuess } from '../lib/util';
 import { usePdaKeys } from '../nav/PdaContext';
 import { usePdaStore } from '../store/PdaStore';
@@ -24,60 +25,84 @@ export function LockerCombo() {
   const [digits, setDigits] = useState('');
   const [guesses, setGuesses] = useState<Guess[]>([]);
   const [phase, setPhase] = useState<Phase>('play');
+  const armed = useRef(true);
+  const phaseRef = useRef(phase);
+  const secretRef = useRef(secret);
+  const guessesRef = useRef(guesses);
+  const streakRef = useRef(comboStreak);
+
+  useEffect(() => {
+    phaseRef.current = phase;
+    secretRef.current = secret;
+    guessesRef.current = guesses;
+    streakRef.current = comboStreak;
+  });
+
+  useEffect(() => {
+    if (digits.length < 4 && phase === 'play') armed.current = true;
+  }, [digits, phase]);
 
   const restart = () => {
+    armed.current = true;
+    phaseRef.current = 'play';
     setSecret(newSecret());
     setDigits('');
     setGuesses([]);
+    guessesRef.current = [];
     setPhase('play');
   };
 
-  const lockIn = (code: string) => {
-    if (code.length !== 4 || phase !== 'play') return;
-    const scored = scoreGuess(code, secret);
-    const next = [...guesses, { code, ...scored }];
-    setGuesses(next);
-    setDigits('');
-    if (scored.rightPlace === 4) {
-      beepWin();
-      setComboStreak(comboStreak + 1);
-      setPhase('win');
-      return;
-    }
-    if (next.length >= 6) {
-      beepError();
-      setComboStreak(0);
-      setPhase('lose');
-    }
-  };
+  const lockIn = useCallback(
+    (code: string) => {
+      if (code.length !== 4 || phaseRef.current !== 'play' || !armed.current) return;
+      armed.current = false;
+      const scored = scoreGuess(code, secretRef.current);
+      const next = [...guessesRef.current, { code, ...scored }];
+      guessesRef.current = next;
+      setGuesses(next);
+      setDigits('');
+      if (scored.rightPlace === 4) {
+        phaseRef.current = 'win';
+        beepWin();
+        setComboStreak(streakRef.current + 1);
+        setPhase('win');
+        return;
+      }
+      if (next.length >= 6) {
+        phaseRef.current = 'lose';
+        beepError();
+        setComboStreak(0);
+        setPhase('lose');
+      }
+    },
+    [setComboStreak],
+  );
+
+  const cancel = useDelayedCommit(digits, phase === 'play' && digits.length === 4, lockIn);
 
   usePdaKeys((key: PdaKey) => {
-    if (phase !== 'play') {
+    if (phaseRef.current !== 'play') {
       if (key === 'OK') restart();
       return;
     }
     if (key === 'C') {
+      cancel();
       setDigits('');
       return;
     }
     if (key === 'OK' || key === '=') {
+      cancel();
       lockIn(digits);
       return;
     }
     if (key < '0' || key > '9') return;
-    setDigits((current) => {
-      const next = (current + key).slice(0, 4);
-      if (next.length === 4) {
-        window.setTimeout(() => lockIn(next), 80);
-      }
-      return next;
-    });
+    setDigits((current) => (current + key).slice(0, 4));
   });
 
   if (phase === 'win') {
     return (
       <LcdChrome title="COMBO" right={`S${comboStreak}`}>
-        <div className="splash-big" data-combo-secret={secret}>
+        <div className="splash-big">
           <div>CLICK!</div>
           <div>LOCKER OPEN</div>
           <div>STREAK {comboStreak}</div>
@@ -90,7 +115,7 @@ export function LockerCombo() {
   if (phase === 'lose') {
     return (
       <LcdChrome title="COMBO" right="0">
-        <div className="splash-big" data-combo-secret={secret}>
+        <div className="splash-big">
           <div>STUCK OUTSIDE</div>
           <div>CODE WAS {secret}</div>
           <LcdBtn onClick={restart}>PLAY AGAIN</LcdBtn>
@@ -101,7 +126,7 @@ export function LockerCombo() {
 
   return (
     <LcdChrome title="COMBO" right={`S${comboStreak}`}>
-      <div data-combo-secret={secret}>
+      <div>
         <div>GUESS {guesses.length + 1}/6</div>
         <div className="lock-dots">
           {'1234'.split('').map((_, i) => (

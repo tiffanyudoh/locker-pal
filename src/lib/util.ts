@@ -46,7 +46,8 @@ export function starRating(key: string): number {
 }
 
 export function isOverdue(item: HomeworkItem, today = todayISO()): boolean {
-  return !item.done && item.dueDate < today;
+  if (item.done || item.dueDate.length === 0) return false;
+  return item.dueDate < today;
 }
 
 export function scoreGuess(

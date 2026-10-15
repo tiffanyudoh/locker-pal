@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { beepError, beepOk } from '../audio/beeps';
+import { useDelayedCommit } from '../lib/useDelayedCommit';
 import { usePda, usePdaKeys } from '../nav/PdaContext';
 import { usePdaStore } from '../store/PdaStore';
 import type { PdaKey } from '../types';
@@ -10,39 +11,58 @@ export function LockScreen() {
   const { openApp, triggerShake } = usePda();
   const [digits, setDigits] = useState('');
   const [msg, setMsg] = useState('ENTER PIN');
+  const armed = useRef(true);
+  const unlockTimer = useRef<number | null>(null);
 
-  const submit = (value: string) => {
-    if (value === pin) {
-      beepOk();
-      setMsg('OK!');
-      window.setTimeout(() => openApp('home'), 220);
-      return;
-    }
-    beepError();
-    triggerShake();
-    setDigits('');
-    setMsg('WRONG PIN');
-  };
+  useEffect(() => {
+    if (digits.length < 4) armed.current = true;
+  }, [digits]);
+
+  useEffect(() => {
+    return () => {
+      if (unlockTimer.current !== null) window.clearTimeout(unlockTimer.current);
+    };
+  }, []);
+
+  const submit = useCallback(
+    (value: string) => {
+      if (!armed.current || value.length !== 4) return;
+      armed.current = false;
+      if (value === pin) {
+        beepOk();
+        setMsg('OK!');
+        if (unlockTimer.current !== null) return;
+        unlockTimer.current = window.setTimeout(() => {
+          unlockTimer.current = null;
+          openApp('home');
+        }, 220);
+        return;
+      }
+      beepError();
+      triggerShake();
+      setDigits('');
+      setMsg('WRONG PIN');
+    },
+    [pin, openApp, triggerShake],
+  );
+
+  const cancel = useDelayedCommit(digits, digits.length === 4, submit);
 
   usePdaKeys((key: PdaKey) => {
     if (key === 'C') {
+      cancel();
       setDigits('');
       setMsg('ENTER PIN');
       return;
     }
     if (key === 'OK') {
+      cancel();
       if (digits.length === 4) submit(digits);
       return;
     }
     if (key < '0' || key > '9') return;
     setMsg('ENTER PIN');
-    setDigits((current) => {
-      const next = (current + key).slice(0, 4);
-      if (next.length === 4) {
-        window.setTimeout(() => submit(next), 80);
-      }
-      return next;
-    });
+    setDigits((current) => (current + key).slice(0, 4));
   });
 
   return (

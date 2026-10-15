@@ -27,7 +27,7 @@ export function MarbleFace({ variant }: { variant: MarbleVariant }) {
             <feComponentTransfer in="alpha" result="mask">
               <feFuncA type="discrete" tableValues="0 0 0 1 0 0 0 1 0 0 1 0 0 0 1 0" />
             </feComponentTransfer>
-            <feFlood flood-color="#2bb3a6" result="teal" />
+            <feFlood floodColor="#2bb3a6" result="teal" />
             <feComposite in="teal" in2="mask" operator="in" result="speck" />
             <feTurbulence
               type="fractalNoise"
@@ -40,9 +40,9 @@ export function MarbleFace({ variant }: { variant: MarbleVariant }) {
             <feComponentTransfer in="fineA" result="fineMask">
               <feFuncA type="discrete" tableValues="0 0 0 1 0 0 0 1 0 0" />
             </feComponentTransfer>
-            <feFlood flood-color="#1a8f86" result="teal2" />
+            <feFlood floodColor="#1a8f86" result="teal2" />
             <feComposite in="teal2" in2="fineMask" operator="in" result="dust" />
-            <feFlood flood-color="#121a32" result="navy" />
+            <feFlood floodColor="#121a32" result="navy" />
             <feComposite in="speck" in2="navy" operator="over" result="base" />
             <feComposite in="dust" in2="base" operator="over" />
           </filter>
