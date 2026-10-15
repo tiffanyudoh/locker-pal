@@ -16,7 +16,7 @@ import { PdaStoreProvider } from './store/PdaStore';
 
 const BASE_W = 680;
 const CLOSED_H = 420;
-const OPEN_H = 560;
+const OPEN_H = 600;
 
 function useFitScale(open: boolean): number {
   const baseH = open ? OPEN_H : CLOSED_H;
@@ -76,7 +76,16 @@ function Stage() {
         <PdaShell>
           <LcdRouter />
         </PdaShell>
-        <div className="caption">{lidOpen ? 'MENU CLOSES THE LID' : 'CLICK THE NOTEBOOK'}</div>
+        <div className="caption">
+          {lidOpen ? (
+            <>
+              <div>MENU CLOSES THE LID</div>
+              <div className="caption-sub">CLR = BACKSPACE</div>
+            </>
+          ) : (
+            'CLICK THE NOTEBOOK'
+          )}
+        </div>
       </div>
     </div>
   );

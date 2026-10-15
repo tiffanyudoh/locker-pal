@@ -658,12 +658,34 @@
   flex-direction: column;
   gap: 8px;
   min-width: 0;
+  padding-top: 13px;
 }
 
 .fn-row,
 .kb-row {
   display: flex;
   gap: 5px;
+}
+
+.key-with-hint {
+  position: relative;
+  min-width: 0;
+}
+
+.clr-hint {
+  position: absolute;
+  left: 0;
+  bottom: calc(100% + 3px);
+  z-index: 2;
+  font-family: Fredoka, sans-serif;
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.4px;
+  line-height: 1;
+  white-space: nowrap;
+  color: var(--comp-yellow);
+  text-shadow: 0 1px 0 rgba(10, 40, 38, 0.45);
+  pointer-events: none;
 }
 
 .keyboard,
@@ -683,6 +705,10 @@
   height: 42px;
   font-size: 16px;
   border-radius: 12px;
+}
+
+.keypad .key-with-hint .keycap {
+  width: 100%;
 }
 
 .key-wide {
@@ -838,6 +864,10 @@
 .lcd-field label {
   font-size: 16px;
   letter-spacing: 1px;
+}
+
+.lcd-input::placeholder {
+  color: rgba(26, 58, 50, 0.45);
 }
 
 .lcd-input,
@@ -1007,4 +1037,11 @@
   font-size: 18px;
   letter-spacing: 2px;
   text-shadow: 2px 2px 0 #6b2a18;
+}
+
+.caption-sub {
+  margin-top: 5px;
+  font-size: 12px;
+  letter-spacing: 1.5px;
+  opacity: 0.88;
 }

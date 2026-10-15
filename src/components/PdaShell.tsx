@@ -1,6 +1,14 @@
 import type { ReactNode } from 'react';
 import { beepClick, resumeAudio } from '../audio/beeps';
-import { backspaceField, focusedControl, focusedTextField, insertText } from '../lib/fieldEdit';
+import {
+  backspaceDateField,
+  backspaceField,
+  focusedControl,
+  focusedTextField,
+  insertDateDigit,
+  insertText,
+  isDateField,
+} from '../lib/fieldEdit';
 import { usePda } from '../nav/PdaContext';
 import type { PdaKey } from '../types';
 import { MarbleFace } from './MarbleFace';
@@ -74,7 +82,8 @@ export function PdaShell({ children }: { children: ReactNode }) {
 
     const field = focusedTextField();
     if (keyCode === 'C' && field) {
-      backspaceField(field);
+      if (isDateField(field)) backspaceDateField(field);
+      else backspaceField(field);
       resumeAudio();
       beepClick();
       return true;
@@ -87,6 +96,16 @@ export function PdaShell({ children }: { children: ReactNode }) {
       return true;
     }
     if (!field) return false;
+
+    if (isDateField(field)) {
+      if (keyCode && keyCode >= '0' && keyCode <= '9') {
+        insertDateDigit(field, keyCode);
+        resumeAudio();
+        beepClick();
+        return true;
+      }
+      return true;
+    }
 
     let text: string | null = null;
     if (keyCode === '.') text = '.';
@@ -154,16 +173,31 @@ export function PdaShell({ children }: { children: ReactNode }) {
               <Keycap label="ENTER" keyCode="OK" extra="key-enter" onSend={sendKey} onPress={onPress} />
             </div>
             <div className="keypad">
-              {PAD.map((item) => (
-                <Keycap
-                  key={item.key}
-                  label={item.label}
-                  keyCode={item.key}
-                  extra={item.extra}
-                  onSend={sendKey}
-                  onPress={onPress}
-                />
-              ))}
+              {PAD.map((item) => {
+                const keycap = (
+                  <Keycap
+                    key={item.key}
+                    label={item.label}
+                    keyCode={item.key}
+                    extra={item.extra}
+                    onSend={sendKey}
+                    onPress={onPress}
+                  />
+                );
+                if (item.key !== 'C') return keycap;
+                return (
+                  <div className="key-with-hint" key={item.key}>
+                    <span className="clr-hint">CLR = BACKSPACE</span>
+                    <Keycap
+                      label={item.label}
+                      keyCode={item.key}
+                      extra={item.extra}
+                      onSend={sendKey}
+                      onPress={onPress}
+                    />
+                  </div>
+                );
+              })}
               <Keycap label="=" keyCode="=" extra="key-wide key-op" onSend={sendKey} onPress={onPress} />
             </div>
           </div>

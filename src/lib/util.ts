@@ -9,14 +9,44 @@ export function todayISO(): string {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 }
 
+export function todayMDY(): string {
+  return toMdyDate(todayISO());
+}
+
 export function pad(n: number): string {
   return String(n).padStart(2, '0');
 }
 
-export function fmtDate(iso: string): string {
-  const parts = iso.split('-');
-  if (parts.length !== 3) return iso;
-  return `${parts[1]}/${parts[2]}`;
+/** Normalize stored ISO or MM-DD-YYYY to YYYY-MM-DD for comparisons. */
+export function toISODate(value: string): string | null {
+  if (/^\d{4}-\d{2}-\d{2}$/.test(value)) return value;
+  const mdy = value.match(/^(\d{2})-(\d{2})-(\d{4})$/);
+  if (mdy) return `${mdy[3]}-${mdy[1]}-${mdy[2]}`;
+  return null;
+}
+
+export function toMdyDate(value: string): string {
+  const iso = toISODate(value);
+  if (!iso) return formatMdyDateDigits(value);
+  const [year, month, day] = iso.split('-');
+  return `${month}-${day}-${year}`;
+}
+
+export function fmtDate(value: string): string {
+  return toMdyDate(value);
+}
+
+/** Digits only, max MMDDYYYY. */
+export function dateDigits(value: string): string {
+  return value.replace(/\D/g, '').slice(0, 8);
+}
+
+/** Type MMDDYYYY on the keypad; dashes fill in as MM-DD-YYYY. */
+export function formatMdyDateDigits(value: string): string {
+  const digits = dateDigits(value);
+  if (digits.length <= 2) return digits;
+  if (digits.length <= 4) return `${digits.slice(0, 2)}-${digits.slice(2)}`;
+  return `${digits.slice(0, 2)}-${digits.slice(2, 4)}-${digits.slice(4)}`;
 }
 
 export function clockStr(d = new Date()): string {
@@ -47,7 +77,9 @@ export function starRating(key: string): number {
 
 export function isOverdue(item: HomeworkItem, today = todayISO()): boolean {
   if (item.done || item.dueDate.length === 0) return false;
-  return item.dueDate < today;
+  const due = toISODate(item.dueDate);
+  if (!due) return false;
+  return due < today;
 }
 
 export function scoreGuess(

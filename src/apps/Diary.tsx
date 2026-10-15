@@ -1,7 +1,7 @@
 import { useState } from 'react';
-import { LcdBtn, LcdChrome, LcdEmpty, LcdField } from '../components/LcdWidgets';
+import { LcdBtn, LcdChrome, LcdDateInput, LcdEmpty, LcdField } from '../components/LcdWidgets';
 import { beepOk } from '../audio/beeps';
-import { fmtDate, todayISO } from '../lib/util';
+import { fmtDate, todayMDY } from '../lib/util';
 import { usePdaBack } from '../nav/PdaContext';
 import { usePdaStore } from '../store/PdaStore';
 import type { DiaryEntry } from '../types';
@@ -9,7 +9,7 @@ import type { DiaryEntry } from '../types';
 const blank = (): Omit<DiaryEntry, 'id'> => ({
   title: '',
   body: '',
-  date: todayISO(),
+  date: todayMDY(),
 });
 
 export function Diary() {
@@ -37,11 +37,9 @@ export function Diary() {
           />
         </LcdField>
         <LcdField label="DATE">
-          <input
-            className="lcd-input"
-            type="date"
+          <LcdDateInput
             value={editing.date}
-            onChange={(e) => setEditing({ ...editing, date: e.target.value })}
+            onChange={(date) => setEditing({ ...editing, date })}
           />
         </LcdField>
         <LcdField label="SECRET">
