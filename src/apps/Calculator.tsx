@@ -83,8 +83,6 @@ export function Calculator() {
   return (
     <LcdChrome title="CALC" right={state.op ?? ''}>
       <div className="calc-display">{state.display}</div>
-      <div>USE THE KEYPAD</div>
-      <div className="lcd-empty-sub">C CLEARS · OK EQUALS</div>
     </LcdChrome>
   );
 }

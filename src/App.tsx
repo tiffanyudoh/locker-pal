@@ -7,6 +7,7 @@ import { Homework } from './apps/Homework';
 import { LockerCombo } from './apps/LockerCombo';
 import { Settings } from './apps/Settings';
 import { BootSplash } from './components/BootSplash';
+import { Hallway } from './components/Hallway';
 import { HomeGrid } from './components/HomeGrid';
 import { LockScreen } from './components/LockScreen';
 import { PdaShell } from './components/PdaShell';
@@ -70,8 +71,7 @@ function Stage() {
 
   return (
     <div className="stage">
-      <div className="lockers" />
-      <div className="desk-edge" />
+      <Hallway />
       <div className="pda-scale" style={{ transform: `scale(${scale})` }}>
         <PdaShell>
           <LcdRouter />
