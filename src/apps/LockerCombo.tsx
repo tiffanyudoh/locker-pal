@@ -145,8 +145,17 @@ export function LockerCombo() {
             </div>
           ))}
         </div>
-        <div className="lcd-empty-sub" style={{ marginTop: 8 }}>
-          OK LOCKS IN · 6 TRIES
+        <div className="combo-howto">
+          {guesses.length === 0 ? (
+            <>
+              <div>CRACK THE 4-DIGIT LOCK</div>
+              <div>DIG = RIGHT #, WRONG SPOT</div>
+              <div>PLC = RIGHT SPOT</div>
+              <div>OK LOCKS IN · 6 TRIES</div>
+            </>
+          ) : (
+            <div>DIG=WRONG SPOT · PLC=RIGHT</div>
+          )}
         </div>
       </div>
     </LcdChrome>

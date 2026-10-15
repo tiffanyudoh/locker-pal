@@ -16,7 +16,7 @@ import { PdaStoreProvider } from './store/PdaStore';
 
 const BASE_W = 680;
 const CLOSED_H = 420;
-const OPEN_H = 600;
+const OPEN_H = 640;
 
 function useFitScale(open: boolean): number {
   const baseH = open ? OPEN_H : CLOSED_H;
@@ -68,23 +68,36 @@ function LcdRouter() {
 function Stage() {
   const { lidOpen } = usePda();
   const scale = useFitScale(lidOpen);
+  const baseH = lidOpen ? OPEN_H : CLOSED_H;
 
   return (
     <div className="stage">
       <Hallway />
-      <div className="pda-scale" style={{ transform: `scale(${scale})` }}>
-        <PdaShell>
-          <LcdRouter />
-        </PdaShell>
-        <div className="caption">
-          {lidOpen ? (
-            <>
-              <div>MENU CLOSES THE LID</div>
-              <div className="caption-sub">CLR = BACKSPACE</div>
-            </>
-          ) : (
-            'CLICK THE NOTEBOOK'
-          )}
+      <div
+        className="pda-scale"
+        style={{ width: BASE_W * scale, height: baseH * scale }}
+      >
+        <div
+          className="pda-scale-inner"
+          style={{
+            width: BASE_W,
+            height: baseH,
+            transform: `scale(${scale})`,
+          }}
+        >
+          <PdaShell>
+            <LcdRouter />
+          </PdaShell>
+          <div className="caption">
+            {lidOpen ? (
+              <>
+                <div>MENU CLOSES THE LID</div>
+                <div className="caption-sub">CLR = BACKSPACE</div>
+              </>
+            ) : (
+              'CLICK THE NOTEBOOK'
+            )}
+          </div>
         </div>
       </div>
     </div>
