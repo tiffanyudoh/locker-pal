@@ -666,10 +666,31 @@
   gap: 5px;
 }
 
-.keyboard {
+.keyboard,
+.keypad {
   display: flex;
   flex-direction: column;
   gap: 5px;
+}
+
+.keypad {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+}
+
+.keypad .keycap {
+  height: 42px;
+  font-size: 16px;
+  border-radius: 12px;
+}
+
+.key-wide {
+  grid-column: span 4;
+}
+
+.key-op {
+  color: #ffe16a;
 }
 
 .keycap {

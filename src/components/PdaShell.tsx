@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from 'react';
+import type { ReactNode } from 'react';
 import { beepClick, resumeAudio } from '../audio/beeps';
 import { backspaceField, focusedControl, focusedTextField, insertText } from '../lib/fieldEdit';
 import { usePda } from '../nav/PdaContext';
@@ -6,43 +6,32 @@ import type { PdaKey } from '../types';
 import { MarbleFace } from './MarbleFace';
 
 type Cap = {
+  key: PdaKey;
   label: string;
-  key?: PdaKey;
-  wide?: 'space' | 'enter';
-  tint?: 'fn' | 'enter';
+  extra?: string;
 };
 
 function Keycap({
   label,
   keyCode,
-  wide,
-  tint,
-  latched,
+  extra,
   onSend,
   onPress,
 }: {
   label: string;
-  keyCode?: PdaKey;
-  wide?: Cap['wide'];
-  tint?: Cap['tint'];
-  latched?: boolean;
+  keyCode: PdaKey;
+  extra?: string;
   onSend: (key: PdaKey) => void;
-  onPress: (label: string, keyCode?: PdaKey) => boolean;
+  onPress: (keyCode: PdaKey) => boolean;
 }) {
   return (
     <button
       type="button"
-      aria-pressed={latched || undefined}
-      className={`keycap${wide ? ` key-${wide}` : ''}${tint ? ` key-${tint}` : ''}${latched ? ' key-latched' : ''}`}
+      className={`keycap${extra ? ` ${extra}` : ''}`}
       onMouseDown={(event) => event.preventDefault()}
       onClick={() => {
-        if (onPress(label, keyCode)) return;
-        if (keyCode) {
-          onSend(keyCode);
-          return;
-        }
-        resumeAudio();
-        beepClick();
+        if (onPress(keyCode)) return;
+        onSend(keyCode);
       }}
     >
       {label}
@@ -50,88 +39,29 @@ function Keycap({
   );
 }
 
-function Row({
-  keys,
-  onSend,
-  onPress,
-  latchedLabel,
-}: {
-  keys: Cap[];
-  onSend: (key: PdaKey) => void;
-  onPress: (label: string, keyCode?: PdaKey) => boolean;
-  latchedLabel?: string;
-}) {
-  return (
-    <div className="kb-row">
-      {keys.map((item) => (
-        <Keycap
-          key={item.label}
-          label={item.label}
-          keyCode={item.key}
-          wide={item.wide}
-          tint={item.tint}
-          latched={item.label === latchedLabel}
-          onSend={onSend}
-          onPress={onPress}
-        />
-      ))}
-    </div>
-  );
-}
-
-const NUM: Cap[] = [
-  { label: '1', key: '1' },
-  { label: '2', key: '2' },
-  { label: '3', key: '3' },
-  { label: '4', key: '4' },
-  { label: '5', key: '5' },
-  { label: '6', key: '6' },
-  { label: '7', key: '7' },
-  { label: '8', key: '8' },
-  { label: '9', key: '9' },
-  { label: '0', key: '0' },
+const PAD: Cap[] = [
+  { key: '7', label: '7' },
+  { key: '8', label: '8' },
+  { key: '9', label: '9' },
+  { key: '+', label: '+', extra: 'key-op' },
+  { key: '4', label: '4' },
+  { key: '5', label: '5' },
+  { key: '6', label: '6' },
+  { key: '-', label: '−', extra: 'key-op' },
+  { key: '1', label: '1' },
+  { key: '2', label: '2' },
+  { key: '3', label: '3' },
+  { key: '*', label: '×', extra: 'key-op' },
+  { key: 'C', label: 'CLR' },
+  { key: '0', label: '0' },
+  { key: '.', label: '.' },
+  { key: '/', label: '/', extra: 'key-op' },
 ];
-
-const Q: Cap[] = 'QWERTYUIOP'.split('').map((label) => ({ label }));
-const A: Cap[] = 'ASDFGHJKL'.split('').map((label) => ({ label }));
-const Z: Cap[] = [
-  { label: '2nd', tint: 'fn' },
-  ...'ZXCVBNM'.split('').map((label) => ({ label })),
-  { label: '.', key: '.' },
-];
-
-const OPS: Cap[] = [
-  { label: '+', key: '+' },
-  { label: '−', key: '-' },
-  { label: '×', key: '*' },
-  { label: '/', key: '/' },
-  { label: '=', key: '=' },
-];
-
-function letterCase(label: string, caps: boolean, shift: boolean): string {
-  return caps !== shift ? label : label.toLowerCase();
-}
 
 export function PdaShell({ children }: { children: ReactNode }) {
   const { lidOpen, openLid, sendKey, shaking } = usePda();
-  const [caps, setCaps] = useState(false);
-  const [shift, setShift] = useState(false);
 
-  const onPress = (label: string, keyCode?: PdaKey): boolean => {
-    if (label === 'CAPS') {
-      setCaps((on) => !on);
-      setShift(false);
-      resumeAudio();
-      beepClick();
-      return true;
-    }
-    if (label === '2nd') {
-      setShift((on) => !on);
-      resumeAudio();
-      beepClick();
-      return true;
-    }
-
+  const onPress = (keyCode: PdaKey): boolean => {
     const control = focusedControl();
     if (!control) return false;
 
@@ -159,17 +89,11 @@ export function PdaShell({ children }: { children: ReactNode }) {
     if (!field) return false;
 
     let text: string | null = null;
-    if (/^[A-Z]$/.test(label)) text = letterCase(label, caps, shift);
-    else if (label === 'SPACE') text = ' ';
-    else if (keyCode === '.') text = '.';
-    else if (keyCode && keyCode >= '0' && keyCode <= '9') text = keyCode;
-    else if (keyCode === '+' || keyCode === '-' || keyCode === '*' || keyCode === '/' || keyCode === '=') {
-      text = keyCode === '*' ? '×' : keyCode;
-    }
+    if (keyCode === '.') text = '.';
+    else if (keyCode >= '0' && keyCode <= '9') text = keyCode;
     if (!text) return false;
 
     insertText(field, text);
-    if (shift) setShift(false);
     resumeAudio();
     beepClick();
     return true;
@@ -225,29 +149,22 @@ export function PdaShell({ children }: { children: ReactNode }) {
 
           <div className="keys-block">
             <div className="fn-row">
-              <Keycap label="MENU" keyCode="MENU" tint="fn" onSend={sendKey} onPress={onPress} />
-              <Keycap label="BACK" keyCode="BACK" tint="fn" onSend={sendKey} onPress={onPress} />
-              <Keycap label="CLR" keyCode="C" onSend={sendKey} onPress={onPress} />
-              {OPS.map((item) => (
+              <Keycap label="MENU" keyCode="MENU" extra="key-fn" onSend={sendKey} onPress={onPress} />
+              <Keycap label="BACK" keyCode="BACK" extra="key-fn" onSend={sendKey} onPress={onPress} />
+              <Keycap label="ENTER" keyCode="OK" extra="key-enter" onSend={sendKey} onPress={onPress} />
+            </div>
+            <div className="keypad">
+              {PAD.map((item) => (
                 <Keycap
-                  key={item.label}
+                  key={item.key}
                   label={item.label}
                   keyCode={item.key}
+                  extra={item.extra}
                   onSend={sendKey}
                   onPress={onPress}
                 />
               ))}
-            </div>
-            <div className="keyboard">
-              <Row keys={NUM} onSend={sendKey} onPress={onPress} />
-              <Row keys={Q} onSend={sendKey} onPress={onPress} />
-              <Row keys={A} onSend={sendKey} onPress={onPress} />
-              <Row keys={Z} onSend={sendKey} onPress={onPress} latchedLabel={shift ? '2nd' : undefined} />
-              <div className="kb-row">
-                <Keycap label="CAPS" tint="fn" latched={caps} onSend={sendKey} onPress={onPress} />
-                <Keycap label="SPACE" wide="space" onSend={sendKey} onPress={onPress} />
-                <Keycap label="ENTER" keyCode="OK" wide="enter" tint="enter" onSend={sendKey} onPress={onPress} />
-              </div>
+              <Keycap label="=" keyCode="=" extra="key-wide key-op" onSend={sendKey} onPress={onPress} />
             </div>
           </div>
         </div>
