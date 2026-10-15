@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
-import { LcdBtn, LcdChrome, LcdField } from '../components/LcdWidgets';
-import { starRating, todayISO, todaySeed } from '../lib/util';
+import { LcdBtn, LcdChrome, LcdDateInput, LcdField } from '../components/LcdWidgets';
+import { starRating, todayMDY, todaySeed } from '../lib/util';
 import { usePdaStore } from '../store/PdaStore';
 
 const FORTUNES = [
@@ -52,7 +52,7 @@ export function Fortune() {
 
       {tab === 'fate' ? (
         <div>
-          <div>TODAY {todayISO().slice(5).replace('-', '/')}</div>
+          <div>TODAY {todayMDY()}</div>
           <p style={{ margin: '12px 0 0' }}>{fortune}</p>
         </div>
       ) : (
@@ -80,12 +80,7 @@ export function Fortune() {
             </div>
           )}
           <LcdField label="OR BDAY">
-            <input
-              className="lcd-input"
-              type="date"
-              value={typedBday}
-              onChange={(e) => setTypedBday(e.target.value)}
-            />
+            <LcdDateInput value={typedBday} onChange={setTypedBday} />
           </LcdField>
           <LcdBtn
             onClick={() => {

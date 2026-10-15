@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { LcdBtn, LcdChrome, LcdEmpty, LcdField } from '../components/LcdWidgets';
+import { LcdBtn, LcdChrome, LcdDateInput, LcdEmpty, LcdField } from '../components/LcdWidgets';
 import { beepOk } from '../audio/beeps';
 import { fmtDate } from '../lib/util';
 import { usePdaBack } from '../nav/PdaContext';
@@ -46,11 +46,9 @@ export function Friends() {
           />
         </LcdField>
         <LcdField label="BIRTHDAY">
-          <input
-            className="lcd-input"
-            type="date"
+          <LcdDateInput
             value={editing.birthday}
-            onChange={(e) => setEditing({ ...editing, birthday: e.target.value })}
+            onChange={(birthday) => setEditing({ ...editing, birthday })}
           />
         </LcdField>
         <LcdField label="PHONE">

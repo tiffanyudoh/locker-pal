@@ -1,7 +1,7 @@
 import { useState } from 'react';
-import { LcdBtn, LcdChrome, LcdEmpty, LcdField } from '../components/LcdWidgets';
+import { LcdBtn, LcdChrome, LcdDateInput, LcdEmpty, LcdField } from '../components/LcdWidgets';
 import { beepOk } from '../audio/beeps';
-import { fmtDate, isOverdue, todayISO } from '../lib/util';
+import { fmtDate, isOverdue, todayMDY } from '../lib/util';
 import { usePdaBack } from '../nav/PdaContext';
 import { usePdaStore } from '../store/PdaStore';
 import type { HomeworkItem } from '../types';
@@ -9,7 +9,7 @@ import type { HomeworkItem } from '../types';
 const blank = (): Omit<HomeworkItem, 'id'> => ({
   subject: '',
   assignment: '',
-  dueDate: todayISO(),
+  dueDate: todayMDY(),
   done: false,
 });
 
@@ -49,11 +49,9 @@ export function Homework() {
           />
         </LcdField>
         <LcdField label="DUE">
-          <input
-            className="lcd-input"
-            type="date"
+          <LcdDateInput
             value={editing.dueDate}
-            onChange={(e) => setEditing({ ...editing, dueDate: e.target.value })}
+            onChange={(dueDate) => setEditing({ ...editing, dueDate })}
           />
         </LcdField>
         <div className="lcd-btn-row">

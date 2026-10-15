@@ -1,5 +1,5 @@
 import { useEffect, useState, type ReactNode } from 'react';
-import { clockStr } from '../lib/util';
+import { clockStr, formatMdyDateDigits, toMdyDate } from '../lib/util';
 
 export function LcdChrome({
   title,
@@ -75,5 +75,33 @@ export function LcdField({
         {children}
       </label>
     </div>
+  );
+}
+
+/** Text date so the PDA keypad can type it — native date pickers steal focus. */
+export function LcdDateInput({
+  value,
+  onChange,
+}: {
+  value: string;
+  onChange: (value: string) => void;
+}) {
+  return (
+    <input
+      className="lcd-input"
+      type="text"
+      inputMode="numeric"
+      autoComplete="off"
+      placeholder="MM-DD-YYYY"
+      maxLength={10}
+      data-date="mdy"
+      value={toMdyDate(value)}
+      onChange={(e) => onChange(formatMdyDateDigits(e.target.value))}
+      onKeyDown={(e) => {
+        if (e.key !== 'Backspace') return;
+        e.preventDefault();
+        onChange(formatMdyDateDigits(toMdyDate(value).replace(/\D/g, '').slice(0, -1)));
+      }}
+    />
   );
 }

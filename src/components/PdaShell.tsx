@@ -1,6 +1,14 @@
 import { useState, type ReactNode } from 'react';
 import { beepClick, resumeAudio } from '../audio/beeps';
-import { backspaceField, focusedControl, focusedTextField, insertText } from '../lib/fieldEdit';
+import {
+  backspaceDateField,
+  backspaceField,
+  focusedControl,
+  focusedTextField,
+  insertDateDigit,
+  insertText,
+  isDateField,
+} from '../lib/fieldEdit';
 import { usePda } from '../nav/PdaContext';
 import type { PdaKey } from '../types';
 import { MarbleFace } from './MarbleFace';
@@ -144,7 +152,8 @@ export function PdaShell({ children }: { children: ReactNode }) {
 
     const field = focusedTextField();
     if (keyCode === 'C' && field) {
-      backspaceField(field);
+      if (isDateField(field)) backspaceDateField(field);
+      else backspaceField(field);
       resumeAudio();
       beepClick();
       return true;
@@ -157,6 +166,16 @@ export function PdaShell({ children }: { children: ReactNode }) {
       return true;
     }
     if (!field) return false;
+
+    if (isDateField(field)) {
+      if (keyCode && keyCode >= '0' && keyCode <= '9') {
+        insertDateDigit(field, keyCode);
+        resumeAudio();
+        beepClick();
+        return true;
+      }
+      return true;
+    }
 
     let text: string | null = null;
     if (/^[A-Z]$/.test(label)) text = letterCase(label, caps, shift);
@@ -227,7 +246,10 @@ export function PdaShell({ children }: { children: ReactNode }) {
             <div className="fn-row">
               <Keycap label="MENU" keyCode="MENU" tint="fn" onSend={sendKey} onPress={onPress} />
               <Keycap label="BACK" keyCode="BACK" tint="fn" onSend={sendKey} onPress={onPress} />
-              <Keycap label="CLR" keyCode="C" onSend={sendKey} onPress={onPress} />
+              <div className="key-with-hint">
+                <span className="clr-hint">CLR = BACKSPACE</span>
+                <Keycap label="CLR" keyCode="C" onSend={sendKey} onPress={onPress} />
+              </div>
               {OPS.map((item) => (
                 <Keycap
                   key={item.label}

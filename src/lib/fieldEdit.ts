@@ -1,3 +1,5 @@
+import { dateDigits, formatMdyDateDigits } from './util';
+
 function isTextField(el: Element | null): el is HTMLInputElement | HTMLTextAreaElement {
   if (el instanceof HTMLTextAreaElement) return true;
   if (!(el instanceof HTMLInputElement)) return false;
@@ -19,6 +21,23 @@ export function focusedControl(): HTMLElement | null {
 export function focusedTextField(): HTMLInputElement | HTMLTextAreaElement | null {
   const el = document.activeElement;
   return isTextField(el) ? el : null;
+}
+
+export function isDateField(el: Element | null): el is HTMLInputElement {
+  return el instanceof HTMLInputElement && Boolean(el.dataset.date);
+}
+
+export function insertDateDigit(field: HTMLInputElement, digit: string): void {
+  if (!/^\d$/.test(digit)) return;
+  const next = formatMdyDateDigits(dateDigits(field.value) + digit);
+  setNativeValue(field, next);
+  field.setSelectionRange(next.length, next.length);
+}
+
+export function backspaceDateField(field: HTMLInputElement): void {
+  const next = formatMdyDateDigits(dateDigits(field.value).slice(0, -1));
+  setNativeValue(field, next);
+  field.setSelectionRange(next.length, next.length);
 }
 
 function setNativeValue(field: HTMLInputElement | HTMLTextAreaElement, next: string): void {
