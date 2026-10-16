@@ -1,3 +1,4 @@
+import { formatMmSs } from '../lib/util';
 import { usePda, usePdaKeys } from '../nav/PdaContext';
 import { usePdaStore } from '../store/PdaStore';
 import type { ScreenId } from '../types';
@@ -11,10 +12,11 @@ const APPS: { id: ScreenId; key: string; label: string; glyph: string }[] = [
   { id: 'calc', key: '5', label: 'CALC', glyph: '12' },
   { id: 'combo', key: '6', label: 'COMBO', glyph: '#' },
   { id: 'settings', key: '7', label: 'SET', glyph: '::' },
+  { id: 'timer', key: '8', label: 'TIMER', glyph: '25' },
 ];
 
 export function HomeGrid() {
-  const { openApp } = usePda();
+  const { openApp, timerRemainingMs, timerFinished, timerActive } = usePda();
   const { hasOverdue, comboStreak } = usePdaStore();
 
   usePdaKeys((key) => {
@@ -22,8 +24,15 @@ export function HomeGrid() {
     if (app) openApp(app.id);
   });
 
+  const right =
+    timerActive && !timerFinished
+      ? formatMmSs(timerRemainingMs)
+      : comboStreak
+        ? `S${comboStreak}`
+        : undefined;
+
   return (
-    <LcdChrome title="HOME" right={comboStreak ? `S${comboStreak}` : undefined}>
+    <LcdChrome title="HOME" right={right}>
       <div className="home-grid">
         {APPS.map((app) => (
           <button

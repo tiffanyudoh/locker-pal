@@ -8,8 +8,8 @@ import {
   useState,
   type ReactNode,
 } from 'react';
-import { beepBoot, beepClick, resumeAudio } from '../audio/beeps';
-import type { PdaKey, ScreenId } from '../types';
+import { beepAlarm, beepBoot, beepClick, resumeAudio } from '../audio/beeps';
+import { POMODORO_MS, type PdaKey, type ScreenId } from '../types';
 
 type KeyHandler = (key: PdaKey) => void;
 type BackHandler = () => boolean;
@@ -26,7 +26,24 @@ type PdaNav = {
   subscribeKeys: (handler: KeyHandler) => () => void;
   registerBackHandler: (handler: BackHandler) => () => void;
   triggerShake: () => void;
+  /** Live remaining. Derived from last snapshot + runningSince. */
+  timerRemainingMs: number;
+  timerPaused: boolean;
+  timerFinished: boolean;
+  /** True while a focus block is running or paused mid-count. False after STOP / lid close / TIME'S UP. */
+  timerActive: boolean;
+  timerRunningSince: number | null;
+  pauseTimer: () => void;
+  resumeTimer: () => void;
+  restartTimer: () => void;
+  stopTimer: () => void;
+  resetTimer: () => void;
 };
+
+function liveRemaining(remainingMs: number, runningSince: number | null, now = Date.now()): number {
+  if (runningSince == null) return remainingMs;
+  return Math.max(0, remainingMs - (now - runningSince));
+}
 
 const PdaNavContext = createContext<PdaNav | null>(null);
 
@@ -49,11 +66,63 @@ const KEY_MAP: Record<string, PdaKey> = {
 
 export function PdaProvider({ children }: { children: ReactNode }) {
   const [lidOpen, setLidOpen] = useState(false);
-  const [screen, setScreen] = useState<ScreenId>('lock');
+  const [screen, setScreen] = useState<ScreenId>('home');
   const [shaking, setShaking] = useState(false);
+  const [remainingMs, setRemainingMs] = useState(POMODORO_MS);
+  const [timerPaused, setTimerPaused] = useState(true);
+  const [runningSince, setRunningSince] = useState<number | null>(null);
+  const [timerFinished, setTimerFinished] = useState(false);
+  const [timerActive, setTimerActive] = useState(false);
+  const [tick, setTick] = useState(0);
   const listeners = useRef(new Set<KeyHandler>());
   const backRef = useRef<BackHandler | null>(null);
   const bootTimer = useRef<number | null>(null);
+  const remainingRef = useRef(remainingMs);
+  const pausedRef = useRef(timerPaused);
+  const runningSinceRef = useRef(runningSince);
+  const finishedRef = useRef(timerFinished);
+  const activeRef = useRef(timerActive);
+  const winBeepRef = useRef(false);
+
+  useEffect(() => {
+    remainingRef.current = remainingMs;
+    pausedRef.current = timerPaused;
+    runningSinceRef.current = runningSince;
+    finishedRef.current = timerFinished;
+    activeRef.current = timerActive;
+  });
+
+  const startFreshSession = useCallback(() => {
+    winBeepRef.current = false;
+    const now = Date.now();
+    remainingRef.current = POMODORO_MS;
+    pausedRef.current = false;
+    runningSinceRef.current = now;
+    finishedRef.current = false;
+    activeRef.current = true;
+    setRemainingMs(POMODORO_MS);
+    setTimerPaused(false);
+    setRunningSince(now);
+    setTimerFinished(false);
+    setTimerActive(true);
+  }, []);
+
+  const finishSession = useCallback(() => {
+    remainingRef.current = 0;
+    pausedRef.current = true;
+    runningSinceRef.current = null;
+    finishedRef.current = true;
+    activeRef.current = false;
+    setRemainingMs(0);
+    setTimerPaused(true);
+    setRunningSince(null);
+    setTimerFinished(true);
+    setTimerActive(false);
+    if (!winBeepRef.current) {
+      winBeepRef.current = true;
+      beepAlarm();
+    }
+  }, []);
 
   const openLid = useCallback(() => {
     if (lidOpen) return;
@@ -61,12 +130,13 @@ export function PdaProvider({ children }: { children: ReactNode }) {
     beepBoot();
     setLidOpen(true);
     setScreen('boot');
+    startFreshSession();
     if (bootTimer.current) window.clearTimeout(bootTimer.current);
     bootTimer.current = window.setTimeout(() => {
-      setScreen('lock');
+      setScreen('timer');
       bootTimer.current = null;
     }, 1600);
-  }, [lidOpen]);
+  }, [lidOpen, startFreshSession]);
 
   const closeLid = useCallback(() => {
     if (bootTimer.current) {
@@ -74,8 +144,65 @@ export function PdaProvider({ children }: { children: ReactNode }) {
       bootTimer.current = null;
     }
     setLidOpen(false);
-    setScreen('lock');
+    setScreen('home');
+    winBeepRef.current = false;
+    remainingRef.current = POMODORO_MS;
+    pausedRef.current = true;
+    runningSinceRef.current = null;
+    finishedRef.current = false;
+    activeRef.current = false;
+    setRemainingMs(POMODORO_MS);
+    setTimerPaused(true);
+    setRunningSince(null);
+    setTimerFinished(false);
+    setTimerActive(false);
   }, []);
+
+  const pauseTimer = useCallback(() => {
+    if (pausedRef.current || finishedRef.current) return;
+    const left = liveRemaining(remainingRef.current, runningSinceRef.current);
+    remainingRef.current = left;
+    pausedRef.current = true;
+    runningSinceRef.current = null;
+    setRemainingMs(left);
+    setTimerPaused(true);
+    setRunningSince(null);
+    if (left <= 0) finishSession();
+  }, [finishSession]);
+
+  const resumeTimer = useCallback(() => {
+    if (!pausedRef.current || finishedRef.current || remainingRef.current <= 0) return;
+    const now = Date.now();
+    pausedRef.current = false;
+    runningSinceRef.current = now;
+    activeRef.current = true;
+    setTimerPaused(false);
+    setRunningSince(now);
+    setTimerActive(true);
+  }, []);
+
+  const restartTimer = useCallback(() => {
+    startFreshSession();
+  }, [startFreshSession]);
+
+  const stopTimer = useCallback(() => {
+    if (!activeRef.current && !finishedRef.current) return;
+    winBeepRef.current = false;
+    remainingRef.current = POMODORO_MS;
+    pausedRef.current = true;
+    runningSinceRef.current = null;
+    finishedRef.current = false;
+    activeRef.current = false;
+    setRemainingMs(POMODORO_MS);
+    setTimerPaused(true);
+    setRunningSince(null);
+    setTimerFinished(false);
+    setTimerActive(false);
+  }, []);
+
+  const resetTimer = useCallback(() => {
+    startFreshSession();
+  }, [startFreshSession]);
 
   const openApp = useCallback((next: ScreenId) => {
     setScreen(next);
@@ -117,6 +244,7 @@ export function PdaProvider({ children }: { children: ReactNode }) {
           closeLid();
           return;
         }
+        // Timer and other apps: MENU returns to HOME; lid stays open.
         goHome();
         return;
       }
@@ -173,6 +301,47 @@ export function PdaProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
+  useEffect(() => {
+    if (!lidOpen || timerPaused || timerFinished) return;
+    const id = window.setInterval(() => {
+      const left = liveRemaining(remainingRef.current, runningSinceRef.current);
+      if (left <= 0) {
+        finishSession();
+        return;
+      }
+      setTick((n) => n + 1);
+    }, 250);
+    return () => window.clearInterval(id);
+  }, [lidOpen, timerPaused, timerFinished, finishSession]);
+
+  useEffect(() => {
+    const onVis = () => {
+      if (document.hidden) return;
+      const left = liveRemaining(remainingRef.current, runningSinceRef.current);
+      if (left <= 0 && runningSinceRef.current != null && !finishedRef.current) {
+        finishSession();
+        return;
+      }
+      setTick((n) => n + 1);
+    };
+    document.addEventListener('visibilitychange', onVis);
+    return () => document.removeEventListener('visibilitychange', onVis);
+  }, [finishSession]);
+
+  useEffect(() => {
+    if (!import.meta.env.DEV) return;
+    const host = window as unknown as { __expirePomodoro?: () => void };
+    host.__expirePomodoro = finishSession;
+    return () => {
+      delete host.__expirePomodoro;
+    };
+  }, [finishSession]);
+
+  const timerRemainingMs = timerFinished
+    ? 0
+    : liveRemaining(remainingMs, runningSince);
+  void tick;
+
   const value = useMemo<PdaNav>(
     () => ({
       lidOpen,
@@ -186,6 +355,16 @@ export function PdaProvider({ children }: { children: ReactNode }) {
       subscribeKeys,
       registerBackHandler,
       triggerShake,
+      timerRemainingMs,
+      timerPaused,
+      timerFinished,
+      timerActive,
+      timerRunningSince: runningSince,
+      pauseTimer,
+      resumeTimer,
+      restartTimer,
+      stopTimer,
+      resetTimer,
     }),
     [
       lidOpen,
@@ -199,6 +378,16 @@ export function PdaProvider({ children }: { children: ReactNode }) {
       subscribeKeys,
       registerBackHandler,
       triggerShake,
+      timerRemainingMs,
+      timerPaused,
+      timerFinished,
+      timerActive,
+      runningSince,
+      pauseTimer,
+      resumeTimer,
+      restartTimer,
+      stopTimer,
+      resetTimer,
     ],
   );
 

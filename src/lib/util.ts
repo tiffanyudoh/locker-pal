@@ -49,6 +49,12 @@ export function formatMdyDateDigits(value: string): string {
   return `${digits.slice(0, 2)}-${digits.slice(2, 4)}-${digits.slice(4)}`;
 }
 
+/** LCD countdown as MM:SS. Ceil so 25:00 holds for the first full second. */
+export function formatMmSs(ms: number): string {
+  const total = Math.max(0, Math.ceil(ms / 1000));
+  return `${pad(Math.floor(total / 60))}:${pad(total % 60)}`;
+}
+
 export function clockStr(d = new Date()): string {
   let h = d.getHours();
   const m = pad(d.getMinutes());

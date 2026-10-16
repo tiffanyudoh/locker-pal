@@ -218,9 +218,9 @@ export function PdaShell({ children }: { children: ReactNode }) {
         </div>
         <div className="lid-card">
           <div className="sticker">
-            <div className="sticker-title">SECRETS</div>
+            <div className="sticker-title">Forever is composed of Nows</div>
             <div className="sticker-art" />
-            <div className="sticker-sub">KEEP OUT</div>
+            <div className="sticker-sub">‘Tis not a different time</div>
           </div>
           <div className="name-plate">Locker Pal</div>
         </div>

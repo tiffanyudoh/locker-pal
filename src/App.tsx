@@ -6,6 +6,7 @@ import { Friends } from './apps/Friends';
 import { Homework } from './apps/Homework';
 import { LockerCombo } from './apps/LockerCombo';
 import { Settings } from './apps/Settings';
+import { Timer } from './apps/Timer';
 import { BootSplash } from './components/BootSplash';
 import { Hallway } from './components/Hallway';
 import { HomeGrid } from './components/HomeGrid';
@@ -60,6 +61,8 @@ function LcdRouter() {
       return <LockerCombo />;
     case 'settings':
       return <Settings />;
+    case 'timer':
+      return <Timer />;
     default:
       return <HomeGrid />;
   }
@@ -91,8 +94,8 @@ function Stage() {
           <div className="caption">
             {lidOpen ? (
               <>
-                <div>MENU CLOSES THE LID</div>
-                <div className="caption-sub">CLR = BACKSPACE</div>
+                <div>EXIT / MENU → HOME</div>
+                <div className="caption-sub">MENU FROM HOME CLOSES LID</div>
               </>
             ) : (
               'CLICK THE NOTEBOOK'

@@ -8,7 +8,8 @@ export type ScreenId =
   | 'fortune'
   | 'calc'
   | 'combo'
-  | 'settings';
+  | 'settings'
+  | 'timer';
 
 export type PdaKey =
   | 'MENU'
@@ -64,6 +65,9 @@ export type PdaData = {
 };
 
 export const STORAGE_KEY = 'locker-pal-v1';
+
+/** Classic focus block. Lid-open starts a fresh session of this length. */
+export const POMODORO_MS = 25 * 60 * 1000;
 
 export const DEFAULT_DATA: PdaData = {
   pin: '1234',

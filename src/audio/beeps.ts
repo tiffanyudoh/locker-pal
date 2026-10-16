@@ -63,3 +63,18 @@ export function beepWin(): void {
   tone(659, 0.1, 'square', 0.05, 0.1);
   tone(784, 0.18, 'square', 0.05, 0.2);
 }
+
+/** Sharp-era PDA alarm: three high square chirp bursts, then two pips. ~1.8s, once. */
+export function beepAlarm(): void {
+  const burst = (offset: number) => {
+    tone(1760, 0.07, 'square', 0.07, offset);
+    tone(2093, 0.07, 'square', 0.075, offset + 0.08);
+    tone(1568, 0.06, 'square', 0.06, offset + 0.16);
+    tone(2093, 0.09, 'square', 0.075, offset + 0.24);
+  };
+  burst(0);
+  burst(0.42);
+  burst(0.84);
+  tone(2349, 0.05, 'square', 0.055, 1.38);
+  tone(2349, 0.08, 'square', 0.06, 1.54);
+}
