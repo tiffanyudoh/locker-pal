@@ -1,34 +1,40 @@
-# React + TypeScript + Vite
+# Locker Pal
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+Locker Pal is a Pomodoro timer that also works like a real kids’ PDA from the 90s — clamshell lid, chunky keys, and a locker hallway behind it.
 
-The lid-interior sticker quotes Emily Dickinson — [Forever is composed of Nows](https://www.poetryfoundation.org/poems/52202/forever-is-composed-of-nows-690).
+Tap the closed notebook to open it. That starts a 25-minute **FOCUS** timer. Press **EXIT** on the timer screen, or the **MENU** key, to get to Home and the rest of the organizer (diary, friends, homework, and a few other apps). **MENU** from Home closes the lid.
 
-Currently, two official plugins are available:
+The sticker inside the lid quotes Emily Dickinson — [Forever is composed of Nows](https://www.poetryfoundation.org/poems/52202/forever-is-composed-of-nows-690).
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## Run it
 
-## React Compiler
+You need [Node.js](https://nodejs.org/). Then:
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the Oxlint configuration
-
-If you are developing a production application, we recommend enabling type-aware lint rules by installing `oxlint-tsgolint` and editing `.oxlintrc.json`:
-
-```json
-{
-  "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["react", "typescript", "oxc"],
-  "options": {
-    "typeAware": true
-  },
-  "rules": {
-    "react/rules-of-hooks": "error",
-    "react/only-export-components": ["warn", { "allowConstantExport": true }]
-  }
-}
+```bash
+git clone <repository-url>
+cd locker-pal
+npm install
+npm run dev
 ```
 
-See the [Oxlint rules documentation](https://oxc.rs/docs/guide/usage/linter/rules) for the full list of rules and categories.
+Open the address printed in the terminal (usually `http://localhost:5173`).
+
+To run the tests:
+
+```bash
+npm test
+```
+
+## Screenshots
+
+Closed lid:
+
+![Locker Pal closed](screenshots/locker-pal-closed.png)
+
+FOCUS timer after you open it:
+
+![Locker Pal open on the FOCUS timer](screenshots/locker-pal-open.png)
+
+Home, once you leave the timer:
+
+![Locker Pal home screen](screenshots/locker-pal-home.png)
